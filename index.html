@@ -252,9 +252,16 @@ function haptic(type) {
   else navigator.vibrate(8);
 }
 
-// ── Scripture link ────────────────────────────────────────────────────────────
+// ── Scripture helpers ─────────────────────────────────────────────────────────
 function scriptureUrl(ref) {
   return `https://www.churchofjesuschrist.org/search?lang=eng&query=${encodeURIComponent(ref)}`;
+}
+// Detect if a string is an actual scripture reference vs a descriptive title
+function isScriptureRef(ref) {
+  // Real refs contain chapter:verse pattern or start with a known book name
+  if (/\d+:\d+/.test(ref)) return true;
+  if (/^(Genesis|Exodus|Leviticus|Numbers|Deuteronomy|Joshua|Judges|Ruth|Samuel|Kings|Chronicles|Ezra|Nehemiah|Esther|Job|Psalm|Proverbs|Ecclesiastes|Isaiah|Jeremiah|Ezekiel|Daniel|Hosea|Joel|Amos|Obadiah|Jonah|Micah|Nahum|Habakkuk|Zephaniah|Haggai|Zechariah|Malachi|Matthew|Mark|Luke|John|Acts|Romans|Corinthians|Galatians|Ephesians|Philippians|Colossians|Thessalonians|Timothy|Titus|Philemon|Hebrews|James|Peter|Jude|Revelation|Nephi|Jacob|Enos|Jarom|Omni|Mosiah|Alma|Helaman|Mormon|Ether|Moroni)/i.test(ref.trim())) return true;
+  return false;
 }
 
 // ── Auth Context ──────────────────────────────────────────────────────────────
@@ -470,9 +477,11 @@ function FlashCard({ card, flipped, onFlip, scriptureOpen, onToggleScripture, sc
               <button className="scripture-ref" onClick={e => { e.stopPropagation(); onToggleScripture(); }}>
                 📖 {card.scripture} {scriptureOpen?'▲':'▼'}
               </button>
-              <a className="scripture-link" href={scriptureUrl(card.scripture)} target="_blank" rel="noopener" onClick={stopProp}>
-                🔗 Church Site
-              </a>
+              {isScriptureRef(card.scripture) && (
+                <a className="scripture-link" href={scriptureUrl(card.scripture)} target="_blank" rel="noopener" onClick={stopProp}>
+                  🔗 Church Site
+                </a>
+              )}
             </div>
             <div className={`scripture-expand ${scriptureOpen?'open':''}`}>
               {scriptureLoading ? <span style={{color:'var(--muted)',fontSize:13}}>Loading scripture…</span> : <span style={{fontSize:14,lineHeight:1.7}}>{scriptureText}</span>}
@@ -525,6 +534,12 @@ function GameScreen({ categories, timed, customDeck, onDone, onBack }) {
     setScriptureOpen(true);
     const key = card.scripture;
     if (scriptureCache.current[key]) { setScriptureText(scriptureCache.current[key]); return; }
+    if (!isScriptureRef(key)) {
+      const msg = '📌 This card addresses a historical, textual, or archaeological claim rather than a specific scripture passage. No verse to display.';
+      scriptureCache.current[key] = msg;
+      setScriptureText(msg);
+      return;
+    }
     setScriptureLoading(true); setScriptureText('');
     try {
       const text = await window.claude.complete(`Quote the exact scripture text for: "${key}". If multiple verses, quote each one. Format: [Reference] "verse text" — one per line. No commentary.`);
