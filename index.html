@@ -263,9 +263,12 @@ function NotesSection({ scriptureRef, onSignIn }) {
   // Not signed in
   if (user === null) return (
     <div className="notes-section" onClick={stopProp}>
+      <div style={{background:'#fff3e0',border:'1px solid #ff9800',borderRadius:8,padding:'6px 10px',fontSize:11,marginBottom:8,color:'#e65100'}}>
+        Auth state: NOT signed in (null)
+      </div>
       <div className="notes-login-prompt">
         ✏️ <button onClick={e => { e.stopPropagation(); onSignIn(); }}>Sign in with Google</button> to save personal notes
-        {authError && <div style={{color:'var(--red)',fontSize:11,marginTop:6}}>{authError}</div>}
+        {authError && <div style={{color:'var(--red)',fontSize:11,marginTop:6,wordBreak:'break-all'}}>{authError}</div>}
       </div>
     </div>
   );
@@ -273,6 +276,9 @@ function NotesSection({ scriptureRef, onSignIn }) {
   // Signed in — show notes
   return (
     <div className="notes-section" onClick={stopProp}>
+      <div style={{background:'#e8f5e9',border:'1px solid #4caf50',borderRadius:8,padding:'6px 10px',fontSize:11,marginBottom:8,color:'#2e7d32'}}>
+        ✓ Signed in as: {user.displayName || user.email || user.uid}
+      </div>
       <div className="notes-header">
         <div className="notes-label">✏️ My Notes</div>
         <div className={`notes-save-status ${status === 'saved' ? 'visible' : ''}`}>✓ Saved</div>
@@ -285,7 +291,6 @@ function NotesSection({ scriptureRef, onSignIn }) {
         onClick={stopProp}
         onTouchStart={stopProp}
       />
-      <div style={{fontSize:11,color:'var(--muted)',marginTop:4,textAlign:'right'}}>{user.email}</div>
     </div>
   );
 }
