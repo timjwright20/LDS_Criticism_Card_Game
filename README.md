@@ -1,0 +1,1 @@
+ this game now has a Google sign in so that it can use the Google database service to record your notes on the flashcards. If you are logged in through Google, then your notes will follow you across devices.
