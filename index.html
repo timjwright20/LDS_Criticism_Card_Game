@@ -202,18 +202,16 @@ function AuthProvider({ children }) {
   const [authError, setAuthError] = useState('');
 
   useEffect(() => {
-    // Handle redirect result on load
-    auth.getRedirectResult()
-      .then(result => { if (result && result.user) setUser(result.user); })
-      .catch(e => setAuthError(e.message));
     return auth.onAuthStateChanged(u => setUser(u || null));
   }, []);
 
   const signIn = () => {
     setAuthError('');
-    auth.signInWithRedirect(googleProvider).catch(e => setAuthError(e.message));
+    auth.signInWithPopup(googleProvider)
+      .then(r => setUser(r.user))
+      .catch(e => { setAuthError(e.message); console.error(e); });
   };
-  const signOut = () => auth.signOut();
+  const signOut = () => auth.signOut().then(() => setUser(null));
   return <AuthContext.Provider value={{ user, signIn, signOut, authError }}>{children}</AuthContext.Provider>;
 }
 function useAuth() { return useContext(AuthContext); }
@@ -253,18 +251,26 @@ function useNote(scriptureRef) {
 function NotesSection({ scriptureRef, onSignIn }) {
   const { user, authError } = useAuth();
   const { note, saveNote, status } = useNote(scriptureRef);
-
   const stopProp = e => e.stopPropagation();
 
-  if (!user) return (
+  // Still loading auth state
+  if (user === undefined) return (
+    <div className="notes-section" onClick={stopProp}>
+      <div style={{fontSize:12,color:'var(--muted)',textAlign:'center',padding:'8px 0'}}>Checking sign-in… ⏳</div>
+    </div>
+  );
+
+  // Not signed in
+  if (user === null) return (
     <div className="notes-section" onClick={stopProp}>
       <div className="notes-login-prompt">
-        ✏️ <button onClick={e => { e.stopPropagation(); onSignIn(); }}>Sign in with Google</button> to save personal notes on this card
+        ✏️ <button onClick={e => { e.stopPropagation(); onSignIn(); }}>Sign in with Google</button> to save personal notes
         {authError && <div style={{color:'var(--red)',fontSize:11,marginTop:6}}>{authError}</div>}
       </div>
     </div>
   );
 
+  // Signed in — show notes
   return (
     <div className="notes-section" onClick={stopProp}>
       <div className="notes-header">
@@ -279,6 +285,7 @@ function NotesSection({ scriptureRef, onSignIn }) {
         onClick={stopProp}
         onTouchStart={stopProp}
       />
+      <div style={{fontSize:11,color:'var(--muted)',marginTop:4,textAlign:'right'}}>{user.email}</div>
     </div>
   );
 }
@@ -291,7 +298,9 @@ function HomeScreen({ onPlay, stats }) {
   return (
     <div className="screen home">
       <div className="home-top">
-        {user ? (
+        {user === undefined ? (
+          <div style={{fontSize:12,color:'rgba(255,255,255,0.4)'}}>Loading…</div>
+        ) : user !== null ? (
           <div style={{display:'flex',alignItems:'center',gap:8}}>
             <div className="user-chip">
               <div className="user-avatar">
